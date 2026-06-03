@@ -25,6 +25,10 @@
 - `benchmark.py`: latency、tokens/s、memory benchmark。
 - `report.md`: 实验结论。
 
+## Milestone Reports
+
+- [Milestone 1: Single-Request Greedy Decoding](./milestone-1-greedy-decoding.md)
+
 ## Interview Talking Points
 
 - prefill 和 decode 为什么性能特征不同？
