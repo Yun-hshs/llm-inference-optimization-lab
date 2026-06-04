@@ -33,6 +33,8 @@
 - [Milestone 4: Active Request State](./milestone-4-active-request.md)
 - [Milestone 5: Active Batch Scheduling](./milestone-5-active-batch.md)
 - [Milestone 6: Refill Active Batch](./milestone-6-refill-active-batch.md)
+- [Milestone 7: Decode Step Token Update](./milestone-7-decode-step-update.md)
+- [Milestone 8: End-to-End Scheduler Step](./milestone-8-scheduler-step.md)
 
 ## Interview Talking Points
 

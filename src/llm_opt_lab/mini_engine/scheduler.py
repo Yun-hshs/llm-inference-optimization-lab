@@ -13,10 +13,11 @@ class GenerationRequest:
 #请求对象统一转换为ActiveRequest对象，方便后续处理和调度
 @dataclass
 class ActiveRequest:
+    #将生成请求转换为活跃请求，包含生成的token列表和完成状态
     request: GenerationRequest
     generated_tokens: list[int]
     finished: bool = False
-
+    #工厂方法，从GenerationRequest创建ActiveRequest，初始化生成的token列表为空，完成状态为False
     @classmethod
     def from_request(cls, request: GenerationRequest) -> "ActiveRequest":
         return cls(request=request, 
@@ -42,6 +43,7 @@ class RequestScheduler:
         if max_batch_size <= 0:
             raise ValueError("max_batch_size must be positive")
         self.max_batch_size = max_batch_size
+        #初始化请求队列和活跃请求列表
         self.request_queue: list[GenerationRequest] = []
         self.active_requests: list[ActiveRequest] = []
 
@@ -50,7 +52,9 @@ class RequestScheduler:
 
     def waiting_count(self) -> int:
         return len(self.request_queue)
-
+    
+    #批处理调度器的核心方法，负责从等待队列中取出请求组成批次，并将这些请求从等待队列中移除
+    #从等待队列中取出下一个批次的请求，组成一个新的批次返回，并将这些请求从等待队列中移除
     def next_batch(self) -> list[GenerationRequest]:
         if not self.request_queue:
             return []
@@ -59,6 +63,8 @@ class RequestScheduler:
         # 将这些请求从队列中移除
         self.request_queue = self.request_queue[self.max_batch_size:]
         return batch
+    
+
     def active_count(self) -> int:
         return len(self.active_requests)
 
@@ -90,4 +96,21 @@ class RequestScheduler:
             self.active_requests.append(active_req)
             add_request.append(active_req)
         return add_request
-        
+    def apply_tokens_to_active_requests(self, token_by_request_id: dict[str, int]) -> None:
+        for active in self.active_requests:
+            request_id = active.request.request_id
+
+            if request_id not in token_by_request_id:
+                raise KeyError(f"missing token for active request {request_id}")
+
+            token_id = token_by_request_id[request_id]
+            active.append_token(token_id)
+    def step(self, token_by_request_id: dict[str, int]) -> list[ActiveRequest]:
+        ''' 1. 给当前 active requests 应用本轮生成 token
+            2. 清理 finished requests
+            3. 从 waiting queue 补入新请求
+            4. 返回本轮完成的请求'''
+        self.apply_tokens_to_active_requests(token_by_request_id)
+        finished = self.remove_finished_requests()
+        self.refill_active_batch()
+        return finished
