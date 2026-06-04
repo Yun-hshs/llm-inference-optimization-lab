@@ -18,6 +18,7 @@ class ModelBackedTokenProvider:
             logits = self.model.forward(output_tokens)
             last_token_logits = logits[-1]
             next_token_id = max(range(len(last_token_logits)), key=lambda i: last_token_logits[i])
-            active.append_token(next_token_id)
+            #在schedule中以及新加的，这里不要加
+            #active.append_token(next_token_id)
             next_token_dict[active.request.request_id] = next_token_id
         return next_token_dict
