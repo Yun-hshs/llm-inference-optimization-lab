@@ -30,6 +30,9 @@
 - [Milestone 1: Single-Request Greedy Decoding](./milestone-1-greedy-decoding.md)
 - [Milestone 2: Minimal KV Cache](./milestone-2-kv-cache.md)
 - [Milestone 3: Request Scheduler](./milestone-3-request-scheduler.md)
+- [Milestone 4: Active Request State](./milestone-4-active-request.md)
+- [Milestone 5: Active Batch Scheduling](./milestone-5-active-batch.md)
+- [Milestone 6: Refill Active Batch](./milestone-6-refill-active-batch.md)
 
 ## Interview Talking Points
 
