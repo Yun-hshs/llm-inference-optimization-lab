@@ -29,6 +29,7 @@
 
 - [Milestone 1: Single-Request Greedy Decoding](./milestone-1-greedy-decoding.md)
 - [Milestone 2: Minimal KV Cache](./milestone-2-kv-cache.md)
+- [Milestone 3: Request Scheduler](./milestone-3-request-scheduler.md)
 
 ## Interview Talking Points
 
