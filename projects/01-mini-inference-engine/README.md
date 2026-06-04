@@ -35,6 +35,10 @@
 - [Milestone 6: Refill Active Batch](./milestone-6-refill-active-batch.md)
 - [Milestone 7: Decode Step Token Update](./milestone-7-decode-step-update.md)
 - [Milestone 8: End-to-End Scheduler Step](./milestone-8-scheduler-step.md)
+- [Milestone 9: Scheduler Lifecycle](./milestone-9-scheduler-lifecycle.md)
+- [Milestone 10: Serving Loop](./milestone-10-serving-loop.md)
+- [Milestone 11: Model-Backed Token Provider](./milestone-11-model-token-provider.md)
+- [Milestone 12: Model-Driven Serving Loop](./milestone-12-model-serving-loop.md)
 
 ## Interview Talking Points
 

@@ -114,3 +114,10 @@ class RequestScheduler:
         finished = self.remove_finished_requests()
         self.refill_active_batch()
         return finished
+    
+    #建立生命周期
+    def has_work(self) -> bool:
+        return bool(self.request_queue or self.active_requests)
+
+    def is_idle(self) -> bool:
+        return not self.has_work()
