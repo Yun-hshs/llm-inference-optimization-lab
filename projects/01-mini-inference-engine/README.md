@@ -39,6 +39,10 @@
 - [Milestone 10: Serving Loop](./milestone-10-serving-loop.md)
 - [Milestone 11: Model-Backed Token Provider](./milestone-11-model-token-provider.md)
 - [Milestone 12: Model-Driven Serving Loop](./milestone-12-model-serving-loop.md)
+- [Milestone 13: Prefill / Decode Phase Tracking](./milestone-13-prefill-decode-phase.md)
+- [Milestone 14: KV-Cache-Aware Token Provider](./milestone-14-kv-cache-aware-token-provider.md)
+- [Milestone 15: Per-Request KV Cache Lifecycle](./milestone-15-kv-cache-lifecycle.md)
+- [Milestone 16: KV Cache Release on Completion](./milestone-16-kv-cache-release.md)
 
 ## Interview Talking Points
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
+from llm_opt_lab.mini_engine.kv_cache import KVCache
+
 @dataclass
 class GenerationRequest:
     request_id: str
@@ -17,12 +19,26 @@ class ActiveRequest:
     request: GenerationRequest
     generated_tokens: list[int]
     finished: bool = False
+    kv_cache: KVCache | None = None
     #工厂方法，从GenerationRequest创建ActiveRequest，初始化生成的token列表为空，完成状态为False
     @classmethod
-    def from_request(cls, request: GenerationRequest) -> "ActiveRequest":
+    def from_request(
+        cls,
+        request: GenerationRequest,
+        *,
+        num_kv_layers: int | None = None,
+    ) -> "ActiveRequest":
+        # TODO: Handwrite Milestone 15 core logic here.
+        # If num_kv_layers is provided, create a KVCache for this active request.
+        #在请求队列被激活的时候，如果提供了num_kv_layers参数，就为这个活跃请求创建一个KVCache对象，并将其赋值给kv_cache属性
+        kv_cache = None
+        if num_kv_layers is not None:
+            kv_cache = KVCache(num_kv_layers)
+
         return cls(request=request, 
                    generated_tokens=[], 
-                   finished=False)
+                   finished=False,
+                   kv_cache=kv_cache)
         
     def append_token(self, token_id: int) -> None:
         #添加token_id到生成的token列表中
@@ -36,13 +52,19 @@ class ActiveRequest:
 
     def output_tokens(self) -> list[int]:
         return self.request.prompt + self.generated_tokens
+    
+    def phase(self) -> str:
+        if not self.generated_tokens:
+            return "prefill"
+        return "decode"
 
 class RequestScheduler:
     
-    def __init__(self, max_batch_size: int) -> None:
+    def __init__(self, max_batch_size: int, num_kv_layers: int | None = None) -> None:
         if max_batch_size <= 0:
             raise ValueError("max_batch_size must be positive")
         self.max_batch_size = max_batch_size
+        self.num_kv_layers = num_kv_layers
         #初始化请求队列和活跃请求列表
         self.request_queue: list[GenerationRequest] = []
         self.active_requests: list[ActiveRequest] = []
@@ -71,15 +93,27 @@ class RequestScheduler:
     def activate_next_batch(self) -> list[ActiveRequest]:
     #将下一个批次的请求从等待队列中取出并转换为ActiveRequest对象，加入到active_requests列表中
         batch = self.next_batch()
-        active_batch = [ActiveRequest.from_request(req) for req in batch]
+        active_batch = [
+            ActiveRequest.from_request(req, num_kv_layers=self.num_kv_layers)
+            for req in batch
+        ]
         self.active_requests.extend(active_batch)
         return active_batch
     
     def remove_finished_requests(self) -> list[ActiveRequest]:
     #从active_requests列表中移除已完成的请求，并返回这些完成的请求
         finished_requests = [req for req in self.active_requests if req.finished]
+        self._release_finished_request_resources(finished_requests)
         self.active_requests = [req for req in self.active_requests if not req.finished]
         return finished_requests
+
+    def _release_finished_request_resources(self, finished_requests: list[ActiveRequest]) -> None:
+        for active in finished_requests:
+            if active.kv_cache is None:
+                continue
+            # TODO: Handwrite Milestone 16 core logic here.
+            # Clear this finished request's KV cache before it leaves the active batch.
+            active.kv_cache.clear()
 
     def refill_active_batch(self) -> list[ActiveRequest]:
     #清楚当前完成的请求后，尝试从等待队列中激活新的请求以填充active_requests列表
@@ -92,7 +126,10 @@ class RequestScheduler:
             if not self.request_queue:
                 break
             req = self.request_queue.pop(0)
-            active_req = ActiveRequest.from_request(req)    
+            active_req = ActiveRequest.from_request(
+                req,
+                num_kv_layers=self.num_kv_layers,
+            )    
             self.active_requests.append(active_req)
             add_request.append(active_req)
         return add_request
