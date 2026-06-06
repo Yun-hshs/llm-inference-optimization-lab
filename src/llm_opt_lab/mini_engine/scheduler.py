@@ -60,11 +60,17 @@ class ActiveRequest:
 
 class RequestScheduler:
     
-    def __init__(self, max_batch_size: int, num_kv_layers: int | None = None) -> None:
+    def __init__(
+        self,
+        max_batch_size: int,
+        num_kv_layers: int | None = None,
+        max_kv_cache_memory_bytes: int | None = None,
+    ) -> None:
         if max_batch_size <= 0:
             raise ValueError("max_batch_size must be positive")
         self.max_batch_size = max_batch_size
         self.num_kv_layers = num_kv_layers
+        self.max_kv_cache_memory_bytes = max_kv_cache_memory_bytes
         #初始化请求队列和活跃请求列表
         self.request_queue: list[GenerationRequest] = []
         self.active_requests: list[ActiveRequest] = []
@@ -89,6 +95,7 @@ class RequestScheduler:
 
     def active_count(self) -> int:
         return len(self.active_requests)
+
 
     def activate_next_batch(self) -> list[ActiveRequest]:
     #将下一个批次的请求从等待队列中取出并转换为ActiveRequest对象，加入到active_requests列表中
@@ -158,3 +165,143 @@ class RequestScheduler:
 
     def is_idle(self) -> bool:
         return not self.has_work()
+    
+    #计算activate里面的k_v cache条目数
+    def active_kv_cache_entries(self) -> int:
+        total_entries = 0
+        for active in self.active_requests:
+            if active.kv_cache is None:
+                continue
+             # Assuming keys and values have the same length
+            total_entries += active.kv_cache.total_entries()
+        return total_entries
+    
+    #计算activate里面的k_v cache占用的内存大小
+    def active_kv_cache_memory_bytes(
+        self,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> int:
+        total_memory = 0
+        for active in self.active_requests:
+            if active.kv_cache is None:
+                continue
+             # Assuming keys and values have the same length
+            total_memory += active.kv_cache.estimate_memory_bytes(
+                hidden_size = hidden_size, 
+                bytes_per_element = bytes_per_element) # Multiply by 2 for keys and values
+        return total_memory
+    #计算当前活跃请求的KV缓存是否超过预算，如果没有配置预算则返回False，否则比较当前KV缓存的内存使用与配置的预算
+    def is_kv_cache_over_budget(
+        self,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> bool:
+        # TODO: Handwrite Milestone 19 core logic here.
+        # Return False when no max_kv_cache_memory_bytes budget is configured.
+        if self.max_kv_cache_memory_bytes is None:
+            return False
+        # Otherwise compare active KV cache memory against the configured budget.
+        current_memory = self.active_kv_cache_memory_bytes(
+            hidden_size=hidden_size,
+            bytes_per_element=bytes_per_element,
+        )        
+        if current_memory > self.max_kv_cache_memory_bytes:
+            return True
+        return False
+    
+
+    #计算剩余的KV缓存预算，如果没有配置预算则返回None，否则返回剩余预算，超过预算时返回0
+    def remaining_kv_cache_budget_bytes(
+        self,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> int | None:
+        # TODO: Handwrite Milestone 19 core logic here.
+        # Return None when the scheduler is unbounded.
+        if self.max_kv_cache_memory_bytes is None:
+            return None
+        # Otherwise return remaining budget, clamped at 0 when usage exceeds budget.
+        current_memory = self.active_kv_cache_memory_bytes(
+            hidden_size=hidden_size,
+            bytes_per_element=bytes_per_element,
+        )
+        remaining_budget = self.max_kv_cache_memory_bytes - current_memory
+        return max(remaining_budget, 0)
+    
+
+    #估算请求需要的KV缓存内存，如果没有配置预算则返回0，否则根据请求的提示长度、KV层数、隐藏层大小和每个元素的字节数计算预估的KV缓存内存使用
+    def estimate_request_prefill_kv_memory_bytes(
+        self,
+        request: GenerationRequest,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> int:
+        # TODO: Handwrite Milestone 20 core logic here.
+        # Estimate prefill KV memory for this request's prompt.
+        if self.num_kv_layers is None:
+            return 0
+        
+            
+        # Formula: prompt_length * num_kv_layers * 2 * hidden_size * bytes_per_element.
+        return len(request.prompt) * self.num_kv_layers * 2 * hidden_size * bytes_per_element
+
+    def can_admit_request(
+        self,
+        request: GenerationRequest,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> bool:
+        # TODO: Handwrite Milestone 20 core logic here.
+        # Return True when no max_kv_cache_memory_bytes budget is configured.
+        if self.max_kv_cache_memory_bytes is None:
+            return True
+        # Otherwise compare current active usage + projected request prefill usage
+        current_memory = self.active_kv_cache_memory_bytes(
+            hidden_size=hidden_size,
+            bytes_per_element=bytes_per_element,
+        )
+        property_memory = self.estimate_request_prefill_kv_memory_bytes(
+            request,
+            hidden_size=hidden_size,
+            bytes_per_element=bytes_per_element,
+        )
+        # with the configured budget.
+        return current_memory + property_memory <= self.max_kv_cache_memory_bytes
+
+    def activate_next_admissible_batch(
+        self,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> list[ActiveRequest]:
+        # 循环检查等待队列中的请求，按照FIFO顺序激活满足KV缓存预算的请求，直到当前批次满员或者等待队列空了或者下一个请求不满足预算为止
+        # TODO: Handwrite Milestone 21 core logic here.
+        # Activate waiting requests in FIFO order while:
+        activate_requests = []
+        while self.request_queue and len(self.active_requests) < self.max_batch_size:
+            next_request = self.request_queue[0]
+            if not self.can_admit_request(
+                next_request,
+                hidden_size=hidden_size,
+                bytes_per_element=bytes_per_element,
+            ):
+                break
+            self.request_queue.pop(0)
+            active_req = ActiveRequest.from_request(
+                next_request,
+                num_kv_layers=self.num_kv_layers,
+            )    
+            self.active_requests.append(active_req)
+            activate_requests.append(active_req)
+        return activate_requests
+        # - active batch has free slots
+        # - waiting queue is not empty
+        # - the front request can be admitted under the KV cache budget
+        #
+        # Important: do not skip a rejected front request to activate later requests.

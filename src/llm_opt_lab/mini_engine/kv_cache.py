@@ -39,4 +39,21 @@ class KVCache:
         self._validate_layer_index(layer_index)
         # 假设每个键对应一个输入token，因此序列长度等于键的数量
         return len(self.layers[layer_index].keys)  
+
+    def total_entries(self) -> int:
+        # TODO: Handwrite Milestone 17 core logic here.
+        total = 0
+        for layer_cache in self.layers:
+            # 每个层的KV缓存中，键和值的数量应该相同，因此可以任选其一来计算总条目数
+            if len(layer_cache.keys) != len(layer_cache.values):
+                raise ValueError("Inconsistent KV cache: keys and values count mismatch.")
+        # 计算所有层的KV缓存中的总条目数        
+            total += len(layer_cache.keys)
+        return total
+        # Count cached token entries across all layers
+
+    def estimate_memory_bytes(self, *, hidden_size: int, bytes_per_element: int) -> int:
+        # TODO: Handwrite Milestone 17 core logic here.
+        # KV cache stores both key and value vectors for each cached entry.
+        return self.total_entries() * hidden_size * bytes_per_element * 2
     

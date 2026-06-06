@@ -43,6 +43,11 @@
 - [Milestone 14: KV-Cache-Aware Token Provider](./milestone-14-kv-cache-aware-token-provider.md)
 - [Milestone 15: Per-Request KV Cache Lifecycle](./milestone-15-kv-cache-lifecycle.md)
 - [Milestone 16: KV Cache Release on Completion](./milestone-16-kv-cache-release.md)
+- [Milestone 17: KV Cache Usage Accounting](./milestone-17-kv-cache-accounting.md)
+- [Milestone 18: Active Batch KV Cache Accounting](./milestone-18-active-kv-cache-accounting.md)
+- [Milestone 19: KV Cache Memory Budget Guard](./milestone-19-kv-cache-budget.md)
+- [Milestone 20: Budget-Aware Request Admission Check](./milestone-20-request-admission.md)
+- [Milestone 21: Budget-Aware Batch Activation](./milestone-21-budget-aware-activation.md)
 
 ## Interview Talking Points
 
