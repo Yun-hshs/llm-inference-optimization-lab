@@ -48,6 +48,10 @@
 - [Milestone 19: KV Cache Memory Budget Guard](./milestone-19-kv-cache-budget.md)
 - [Milestone 20: Budget-Aware Request Admission Check](./milestone-20-request-admission.md)
 - [Milestone 21: Budget-Aware Batch Activation](./milestone-21-budget-aware-activation.md)
+- [Milestone 22: Budget-Aware Refill](./milestone-22-budget-aware-refill.md)
+- [Milestone 23: Budget-Aware Scheduler Step](./milestone-23-budget-aware-step.md)
+- [Milestone 24: Budget-Aware Serving Loop](./milestone-24-budget-aware-serving-loop.md)
+- [Milestone 25: KV Budget Blocked State](./milestone-25-blocked-state.md)
 
 ## Interview Talking Points
 

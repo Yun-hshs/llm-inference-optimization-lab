@@ -140,6 +140,22 @@ class RequestScheduler:
             self.active_requests.append(active_req)
             add_request.append(active_req)
         return add_request
+
+    def refill_active_batch_admissible(
+        self,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> list[ActiveRequest]:
+        # TODO: Handwrite Milestone 22 core logic here.
+        # First remove finished requests, then fill open slots using
+        self.remove_finished_requests()
+        return self.activate_next_admissible_batch(
+            hidden_size=hidden_size,
+            bytes_per_element=bytes_per_element,
+        )
+        # activate_next_admissible_batch(...).
+
     def apply_tokens_to_active_requests(self, token_by_request_id: dict[str, int]) -> None:
         for active in self.active_requests:
             request_id = active.request.request_id
@@ -158,6 +174,24 @@ class RequestScheduler:
         finished = self.remove_finished_requests()
         self.refill_active_batch()
         return finished
+
+    def step_admissible(
+        self,
+        token_by_request_id: dict[str, int],
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> list[ActiveRequest]:
+        # TODO: Handwrite Milestone 23 core logic here.
+        # Apply tokens to active requests, collect finished requests, then refill
+        self.apply_tokens_to_active_requests(token_by_request_id)
+        finished = self.remove_finished_requests()
+        self.refill_active_batch_admissible(
+            hidden_size=hidden_size,
+            bytes_per_element=bytes_per_element,
+        )
+        return finished
+        # open slots using budget-aware admission.
     
     #建立生命周期
     def has_work(self) -> bool:
@@ -165,6 +199,28 @@ class RequestScheduler:
 
     def is_idle(self) -> bool:
         return not self.has_work()
+
+    def is_blocked_by_kv_budget(
+        self,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> bool:
+        # TODO: Handwrite Milestone 25 core logic here.
+        # Return True only when there are no active requests, the waiting queue
+        if  self.active_requests :
+            return False
+        if not self.request_queue:
+            return False
+        # has a front request, and that front request cannot be admitted by the
+        front_request = self.request_queue[0]
+        return not self.can_admit_request(
+            front_request,
+            hidden_size=hidden_size,
+            bytes_per_element=bytes_per_element,
+        )
+        # configured KV cache budget.
+
     
     #计算activate里面的k_v cache条目数
     def active_kv_cache_entries(self) -> int:

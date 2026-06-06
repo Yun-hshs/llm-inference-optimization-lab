@@ -34,4 +34,29 @@ class ServingLoop:
         # 最后返回所有完成的请求
         return finished_requests
 
+    def run_until_blocked_or_idle_admissible(
+        self,
+        *,
+        hidden_size: int,
+        bytes_per_element: int,
+    ) -> list[ActiveRequest]:
+        # TODO: Handwrite Milestone 24 core logic here.
+        # Use budget-aware activation/step methods. Stop when there are no active
+        if not self.scheduler.active_requests:
+            self.scheduler.activate_next_admissible_batch(
+                hidden_size=hidden_size,
+                bytes_per_element=bytes_per_element,
+            )
+        finished_requests: list[ActiveRequest] = []
+        while self.scheduler.active_requests:
+            token_dict = self.token_provider(self.scheduler.active_requests)
+            finished = self.scheduler.step_admissible(
+                token_by_request_id=token_dict,
+                hidden_size=hidden_size,
+                bytes_per_element=bytes_per_element,
+            )
+            finished_requests.extend(finished)
+        # requests, because remaining waiting requests may be blocked by budget.
+        return finished_requests
+
            
