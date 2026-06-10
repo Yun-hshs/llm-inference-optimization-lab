@@ -4,6 +4,18 @@
 
 实现一个轻量级 Transformer decoder 推理引擎，覆盖 prefill、decode、KV cache、continuous batching 和 Paged KV 的核心概念。
 
+## Current Status
+
+Project 1 已完成 32 个 Milestones，覆盖从单请求 greedy decoding 到 continuous batching、KV cache budget control、benchmark report，以及 Paged KV block allocator。
+
+当前验证结果：mini engine 全量测试 `79` 个用例通过。
+
+验证命令：
+
+```bash
+PYTHONPATH=src python3 -m unittest discover tests/mini_engine -v
+```
+
 ## Why It Matters
 
 这是理解 vLLM、SGLang 等推理框架的基础项目。面试时可以从请求调度、显存管理、吞吐和延迟权衡展开。
@@ -23,6 +35,7 @@
 - `scheduler.py`: 请求调度逻辑。
 - `kv_cache.py`: KV cache 和 block allocator。
 - `benchmark.py`: latency、tokens/s、memory benchmark。
+- `paged_kv.py`: Paged KV block allocator。
 - `report.md`: 实验结论。
 
 ## Milestone Reports
@@ -57,6 +70,23 @@
 - [Milestone 28: Serving Loop Metrics Summary](./milestone-28-serving-loop-metrics.md)
 - [Milestone 29: Benchmark Record](./milestone-29-benchmark-record.md)
 - [Milestone 30: Benchmark Markdown Table](./milestone-30-benchmark-markdown.md)
+- [Milestone 31: Project Report](./milestone-31-report.md)
+- [Milestone 32: Paged KV Block Allocator](./milestone-32-paged-kv-allocator.md)
+
+## Final Report
+
+- [Mini Inference Engine Report](./report.md)
+
+## Final Capabilities
+
+- Greedy decoding and model-backed token generation
+- Prefill / decode phase tracking
+- Per-request KV cache lifecycle and release
+- Continuous batching scheduler
+- KV cache memory accounting and budget-aware admission
+- Blocked / idle serving lifecycle
+- Serving metrics and benchmark Markdown reporting
+- Paged KV block allocation, release, reuse, and error handling
 
 ## Interview Talking Points
 
