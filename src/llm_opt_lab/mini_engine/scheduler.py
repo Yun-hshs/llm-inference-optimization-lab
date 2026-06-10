@@ -32,6 +32,8 @@ class ActiveRequest:
         # If num_kv_layers is provided, create a KVCache for this active request.
         #在请求队列被激活的时候，如果提供了num_kv_layers参数，就为这个活跃请求创建一个KVCache对象，并将其赋值给kv_cache属性
         kv_cache = None
+
+        #有kv cache层数的配置才创建kv cache对象，否则保持为None
         if num_kv_layers is not None:
             kv_cache = KVCache(num_kv_layers)
 
@@ -221,7 +223,32 @@ class RequestScheduler:
         )
         # configured KV cache budget.
 
-    
+    def status(
+    self,
+    *,
+    hidden_size: int,
+    bytes_per_element: int,
+    ) -> dict[str, int | bool | None]:
+        return {
+            "waiting_count": self.waiting_count(),
+            "active_count": self.active_count(),
+            "has_work": self.has_work(),
+            "is_idle": self.is_idle(),
+            "is_blocked_by_kv_budget": self.is_blocked_by_kv_budget(
+                hidden_size=hidden_size,
+                bytes_per_element=bytes_per_element,
+        ),
+            "active_kv_cache_entries": self.active_kv_cache_entries(),
+            "active_kv_cache_memory_bytes": self.active_kv_cache_memory_bytes(
+                hidden_size=hidden_size,
+                bytes_per_element=bytes_per_element,
+        ),
+            "remaining_kv_cache_budget_bytes": self.remaining_kv_cache_budget_bytes(
+                hidden_size=hidden_size,
+                bytes_per_element=bytes_per_element,
+        ),
+            "max_kv_cache_memory_bytes": self.max_kv_cache_memory_bytes,
+        }
     #计算activate里面的k_v cache条目数
     def active_kv_cache_entries(self) -> int:
         total_entries = 0
@@ -330,6 +357,17 @@ class RequestScheduler:
         # with the configured budget.
         return current_memory + property_memory <= self.max_kv_cache_memory_bytes
 
+
+    #判断下一个batch加入活跃的请求
+    '''
+    循环体. 有请求队列，活跃队列有空位{
+    1.弹出下一个请求
+    2.can_admit_request判断是否可以加入活跃队列
+    3.如果不可以加入，停止循环
+    4.如果可以加入，创建ActiveRequest对象加入活跃队列
+    5.记录加入的ActiveRequest对象以便返回
+    }
+    '''
     def activate_next_admissible_batch(
         self,
         *,
@@ -356,8 +394,3 @@ class RequestScheduler:
             self.active_requests.append(active_req)
             activate_requests.append(active_req)
         return activate_requests
-        # - active batch has free slots
-        # - waiting queue is not empty
-        # - the front request can be admitted under the KV cache budget
-        #
-        # Important: do not skip a rejected front request to activate later requests.

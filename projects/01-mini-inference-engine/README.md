@@ -52,6 +52,11 @@
 - [Milestone 23: Budget-Aware Scheduler Step](./milestone-23-budget-aware-step.md)
 - [Milestone 24: Budget-Aware Serving Loop](./milestone-24-budget-aware-serving-loop.md)
 - [Milestone 25: KV Budget Blocked State](./milestone-25-blocked-state.md)
+- [Milestone 26: Scheduler Status Snapshot](./milestone-26-scheduler-status.md)
+- [Milestone 27: Serving Loop Result](./milestone-27-serving-loop-result.md)
+- [Milestone 28: Serving Loop Metrics Summary](./milestone-28-serving-loop-metrics.md)
+- [Milestone 29: Benchmark Record](./milestone-29-benchmark-record.md)
+- [Milestone 30: Benchmark Markdown Table](./milestone-30-benchmark-markdown.md)
 
 ## Interview Talking Points
 
